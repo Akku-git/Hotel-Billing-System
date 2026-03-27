@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Hotel Billing System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+        }
+        .print-only { display: none; }
+        .hide-arrows::-webkit-inner-spin-button,
+        .hide-arrows::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-blue-600 text-white p-4 no-print">
+        <div class="container mx-auto flex flex-wrap justify-between items-center">
+            <h1 class="text-xl font-bold">Hotel Billing System</h1>
+            <div class="space-x-2 md:space-x-4">
+                <button onclick="showSection('billing')" class="hover:text-blue-200 px-2 py-1">Billing</button>
+                <button onclick="showSection('menu')" class="hover:text-blue-200 px-2 py-1">Menu</button>
+                <button onclick="showSection('expenses')" class="hover:text-blue-200 px-2 py-1">Expenses</button>
+                <button onclick="showSection('reports')" class="hover:text-blue-200 px-2 py-1">Reports</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto p-4">
+        <!-- Billing Section -->
+        <div id="billing" class="grid md:grid-cols-2 gap-4">
+            <div class="bg-white p-4 rounded-lg shadow">
+                <div class="flex justify-between mb-4">
+                    <h2 class="text-xl font-bold">New Order</h2>
+                    <select id="orderType" class="border rounded p-1">
+                        <option value="dine-in">Dine-In</option>
+                        <option value="pickup">Pickup</option>
+                    </select>
+                </div>
+                
+                <div id="tableSelect" class="mb-4">
+                    <select id="tableNumber" class="w-full p-2 border rounded">
+                        <option value="">Select Table</option>
+                    </select>
+                </div>
+
+                <div class="flex gap-2 mb-4">
+                    <select id="menuItems" class="flex-1 p-2 border rounded">
+                        <option value="">Select Item</option>
+                    </select>
+                    <input type="number" id="quantity" placeholder="Qty" class="w-20 p-2 border rounded hide-arrows" min="1" value="1">
+                    <button onclick="addToOrder()" class="bg-blue-600 text-white px-4 py-2 rounded">
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
+                </div>
+
+                <div id="currentOrder" class="border rounded p-4">
+                    <h3 class="font-bold mb-2">Current Order</h3>
+                    <div id="orderItems" class="max-h-48 overflow-y-auto"></div>
+                    <div class="mt-4 border-t pt-2">
+                        <div class="flex justify-between font-bold">
+                            <span>Total:</span>
+                            <span id="orderTotal">₹0.00</span>
+                        </div>
+                        <button onclick="generateBill()" class="w-full mt-4 bg-green-600 text-white px-4 py-2 rounded">
+                            Generate Bill
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Orders -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h2 class="text-xl font-bold mb-4">Active Orders</h2>
+                <div id="activeOrders" class="space-y-2"></div>
+            </div>
+        </div>
+
+        <!-- Menu Management -->
+        <div id="menu" class="hidden">
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h2 class="text-xl font-bold mb-4">Menu Management</h2>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <h3 class="font-bold mb-2">Add New Item</h3>
+                        <div class="space-y-2">
+                            <input type="text" id="itemName" placeholder="Item Name" class="w-full p-2 border rounded">
+                            <input type="number" id="itemPrice" placeholder="Price" class="w-full p-2 border rounded hide-arrows">
+                            <select id="itemCategory" class="w-full p-2 border rounded">
+                                <option value="">Select Category</option>
+                                <option value="starters">Starters</option>
+                                <option value="mains">Main Course</option>
+                                <option value="desserts">Desserts</option>
+                                <option value="beverages">Beverages</option>
+                            </select>
+                            <button onclick="addMenuItem()" class="w-full bg-blue-600 text-white px-4 py-2 rounded">
+                                Add Item
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="font-bold mb-2">Current Menu</h3>
+                        <div id="menuList" class="max-h-96 overflow-y-auto space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expenses Section -->
+        <div id="expenses" class="hidden">
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h2 class="text-xl font-bold mb-4">Expense Tracking</h2>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <div class="space-y-2">
+                            <input type="text" id="expenseDesc" placeholder="Expense Description" class="w-full p-2 border rounded">
+                            <input type="number" id="expenseAmount" placeholder="Amount" class="w-full p-2 border rounded hide-arrows">
+                            <button onclick="addExpense()" class="w-full bg-blue-600 text-white px-4 py-2 rounded">
+                                Add Expense
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="font-bold mb-2">Today's Expenses</h3>
+                        <div id="expenseList" class="max-h-96 overflow-y-auto space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Section -->
+        <div id="reports" class="hidden">
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h2 class="text-xl font-bold mb-4">Financial Reports</h2>
+                <div class="grid md:grid-cols-3 gap-4 mb-4">
+                    <div class="bg-blue-100 p-4 rounded">
+                        <div class="text-sm text-gray-600">Today's Sales</div>
+                        <div id="todaySales" class="text-xl font-bold">₹0.00</div>
+                    </div>
+                    <div class="bg-green-100 p-4 rounded">
+                        <div class="text-sm text-gray-600">Today's Orders</div>
+                        <div id="todayOrders" class="text-xl font-bold">0</div>
+                    </div>
+                    <div class="bg-red-100 p-4 rounded">
+                        <div class="text-sm text-gray-600">Today's Expenses</div>
+                        <div id="todayExpenses" class="text-xl font-bold">₹0.00</div>
+                    </div>
+                </div>
+                <div class="h-64">
+                    <canvas id="salesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Print Template -->
+    <div id="printArea" class="print-only p-4">
+        <div class="text-center">
+            <h2 class="text-xl font-bold">Hotel Name</h2>
+            <p>Address Line 1</p>
+            <p>Phone: 1234567890</p>
+            <p>GST No: XXXXXXXXXXXXX</p>
+        </div>
+        <div class="mt-4">
+            <div id="printBillNo" class="text-sm"></div>
+            <div id="printDateTime" class="text-sm"></div>
+            <div id="printOrderType" class="text-sm"></div>
+            <div id="printOrderDetails" class="mt-4"></div>
+            <div id="printTotal" class="mt-4 border-t pt-2"></div>
+        </div>
+        <div class="text-center mt-4">
+            <p>Thank you for your visit!</p>
+        </div>
+    </div>
+
+    <script>
+        // Data Structure
+        let menu = [
+            {id: 1, name: 'Butter Chicken', price: 300, category: 'mains'},
+            {id: 2, name: 'Naan', price: 40, category: 'mains'},
+            {id: 3, name: 'Dal Makhani', price: 200, category: 'mains'}
+        ];
+        let currentOrder = [];
+        let activeOrders = [];
+        let expenses = [];
+        let dailySales = [];
+        let salesData = {
+            daily: Array(30).fill(0).map(() => Math.floor(Math.random() * 10000)),
+            monthly: Array(12).fill(0).map(() => Math.floor(Math.random() * 100000))
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            populateMenu();
+            populateTables();
+            updateReports();
+            
+            // Event Listeners
+            document.getElementById('orderType').addEventListener('change', (e) => {
+                document.getElementById('tableSelect').style.display = 
+                    e.target.value === 'dine-in' ? 'block' : 'none';
+            });
+        });
+
+        // Menu Management
+        function populateMenu() {
+            const select = document.getElementById('menuItems');
+            select.innerHTML = '<option value="">Select Item</option>';
+            menu.forEach(item => {
+                select.innerHTML += `<option value="${item.id}">${item.name} - ₹${item.price}</option>`;
+            });
+            
+            const menuList = document.getElementById('menuList');
+            menuList.innerHTML = '';
+            menu.forEach(item => {
+                menuList.innerHTML += `
+                    <div class="flex justify-between items-center p-2 border rounded">
+                        <div>
+                            <span class="font-bold">${item.name}</span>
+                            <span class="text-sm text-gray-600 ml-2">${item.category}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span>₹${item.price}</span>
+                            <button onclick="editMenuItem(${item.id})" class="text-blue-600">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function populateTables() {
+            const select = document.getElementById('tableNumber');
+            select.innerHTML = '<option value="">Select Table</option>';
+            for(let i=1; i<=10; i++) {
+                select.innerHTML += `<option value="${i}">Table ${i}</option>`;
+            }
+        }
+
+        function addMenuItem() {
+            const name = document.getElementById('itemName').value;
+            const price = parseFloat(document.getElementById('itemPrice').value);
+            const category = document.getElementById('itemCategory').value;
+            
+            if (name && price && category) {
+                menu.push({
+                    id: menu.length + 1,
+                    name,
+                    price,
+                    category
+                });
+                populateMenu();
+                // Clear inputs
+                document.getElementById('itemName').value = '';
+                document.getElementById('itemPrice').value = '';
+                document.getElementById('itemCategory').value = '';
+            }
+        }
+
+        // Order Management
+        function addToOrder() {
+            const itemId = document.getElementById('menuItems').value;
+            const quantity = parseInt(document.getElementById('quantity').value);
+            if (itemId && quantity) {
+                const item = menu.find(i => i.id == itemId);
+                currentOrder.push({
+                    ...item,
+                    quantity,
+                    total: item.price * quantity
+                });
+                updateOrderDisplay();
+            }
+        }
+
+        function updateOrderDisplay() {
+            const orderItems = document.getElementById('orderItems');
+            orderItems.innerHTML = '';
+            let total = 0;
+            
+            currentOrder.forEach((item, index) => {
+                total += item.total;
+                orderItems.innerHTML += `
+                    <div class="flex justify-between items-center p-2 border-b">
+                        <div>
+                            <span class="font-bold">${item.name}</span>
+                            <span class="text-sm text-gray-600">x${item.quantity}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span>₹${item.total}</span>
+                            <button onclick="removeItem(${index})" class="text-red-600">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('orderTotal').textContent = `₹${total.toFixed(2)}`;
+        }
+
+        function removeItem(index) {
+            currentOrder.splice(index, 1);
+            updateOrderDisplay();
+        }
+
+        // Billing
+        function generateBill() {
+            if (currentOrder.length === 0) return;
+
+            const orderType = document.getElementById('orderType').value;
+            const tableNumber = document.getElementById('tableNumber').value;
+            const total = currentOrder.reduce((sum, item) => sum + item.total, 0);
+            const billNumber = `BILL${Date.now()}`;
+            
+            // Update sales data
+            dailySales.push(total);
+            
+            // Print preparation
+            document.getElementById('printBillNo').textContent = `Bill No: ${billNumber}`;
+            document.getElementById('printDateTime').textContent = new Date().toLocaleString();
+            document.getElementById('printOrderType').textContent = 
+                `${orderType.toUpperCase()}${tableNumber ? ` - Table ${tableNumber}` : ''}`;
+            
+            const printOrderDetails = document.getElementById('printOrderDetails');
+            printOrderDetails.innerHTML = currentOrder.map(item => `
+                <div class="flex justify-between my-1">
+                    <span>${item.name} x${item.quantity}</span>
+                    <span>₹${item.total}</span>
+                </div>
+            `).join('');
+            
+            document.getElementById('printTotal').innerHTML = `
+                <div class="flex justify-between font-bold">
+                    <span>Total</span>
+                    <span>₹${total.toFixed(2)}</span>
+                </div>
+            `;
+
+            // Print
+            window.print();
+
+            // Clear order
+            currentOrder = [];
+            updateOrderDisplay();
+            updateReports();
+        }
+
+        // Expenses
+        function addExpense() {
+            const desc = document.getElementById('expenseDesc').value;
+            const amount = parseFloat(document.getElementById('expenseAmount').value);
+            
+            if (desc && amount) {
+                expenses.push({
+                    desc,
+                    amount,
+                    date: new Date()
+                });
+                updateExpenseList();
+                
+                document.getElementById('expenseDesc').value = '';
+                document.getElementById('expenseAmount').value = '';
+            }
+        }
+
+        function updateExpenseList() {
+            const expenseList = document.getElementById('expenseList');
+            expenseList.innerHTML = '';
+            
+            expenses.forEach((expense, index) => {
+                expenseList.innerHTML += `
+                    <div class="flex justify-between items-center p-2 border rounded">
+                        <span>${expense.desc}</span>
+                        <div class="flex items-center gap-2">
+                            <span>₹${expense.amount}</span>
+                            <button onclick="removeExpense(${index})" class="text-red-600">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            updateReports();
+        }
+
+        function removeExpense(index) {
+            expenses.splice(index, 1);
+            updateExpenseList();
+        }
+
+        // Reports
+        function updateReports() {
+            const todaySalesTotal = dailySales.reduce((a, b) => a + b, 0);
+            const todayExpensesTotal = expenses.reduce((a, b) => a + b.amount, 0);
+            
+            document.getElementById('todaySales').textContent = `₹${todaySalesTotal.toFixed(2)}`;
+            document.getElementById('todayOrders').textContent = dailySales.length;
+            document.getElementById('todayExpenses').textContent = `₹${todayExpensesTotal.toFixed(2)}`;
+            
+            updateChart();
+        }
+
+        function updateChart() {
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array(30).fill(0).map((_, i) => `Day ${i + 1}`),
+                    datasets: [{
+                        label: 'Daily Sales',
+                        data: salesData.daily,
+                        borderColor: 'rgb(59, 130, 246)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Navigation
+        function showSection(section) {
+            ['billing', 'menu', 'expenses', 'reports'].forEach(s => {
+                document.getElementById(s).classList.add('hidden');
+            });
+            document.getElementById(section).classList.remove('hidden');
+            if (section === 'reports') updateReports();
+        }
+    </script>
+</body>
+</html>
